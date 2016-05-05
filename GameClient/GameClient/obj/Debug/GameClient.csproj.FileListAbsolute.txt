@@ -1,0 +1,5 @@
+c:\users\enricotj\documents\visual studio 2013\Projects\GameClient\GameClient\bin\Debug\GameClient.exe.config
+c:\users\enricotj\documents\visual studio 2013\Projects\GameClient\GameClient\bin\Debug\GameClient.exe
+c:\users\enricotj\documents\visual studio 2013\Projects\GameClient\GameClient\bin\Debug\GameClient.pdb
+c:\users\enricotj\documents\visual studio 2013\Projects\GameClient\GameClient\obj\Debug\GameClient.exe
+c:\users\enricotj\documents\visual studio 2013\Projects\GameClient\GameClient\obj\Debug\GameClient.pdb

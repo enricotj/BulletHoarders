@@ -1,0 +1,6 @@
+c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\bin\Debug\GameServer.exe.config
+c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\bin\Debug\GameServer.exe
+c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\bin\Debug\GameServer.pdb
+c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\obj\Debug\GameServer.csprojResolveAssemblyReference.cache
+c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\obj\Debug\GameServer.exe
+c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\obj\Debug\GameServer.pdb
