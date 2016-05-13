@@ -34,7 +34,7 @@ namespace GameServer
                 // receive and print message
                 data = listener.Receive(ref endPoint);
                 string msg = Encoding.ASCII.GetString(data, 0, data.Length);
-                Console.WriteLine("{0} --> {1}", endPoint.ToString(), msg);
+                Console.WriteLine(endPoint.ToString());
 
                 // handle received data on new thread so that we can immediately go back to listening
                 Thread receiveThread = new Thread(() => receiver.Receive(endPoint.Address.ToString(), data));

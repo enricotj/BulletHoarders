@@ -41,7 +41,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bullet.cs" />
+    <Compile Include="Cave.cs" />
+    <Compile Include="Cell.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="GridPoint.cs" />
     <Compile Include="Listener.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Receiver.cs" />

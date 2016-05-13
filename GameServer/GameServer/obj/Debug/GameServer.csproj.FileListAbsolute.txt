@@ -4,3 +4,9 @@ c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\bi
 c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\obj\Debug\GameServer.csprojResolveAssemblyReference.cache
 c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\obj\Debug\GameServer.exe
 c:\users\enricotj\documents\visual studio 2013\Projects\GameServer\GameServer\obj\Debug\GameServer.pdb
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameServer\GameServer\bin\Debug\GameServer.exe.config
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameServer\GameServer\obj\Debug\GameServer.exe
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameServer\GameServer\obj\Debug\GameServer.pdb
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameServer\GameServer\bin\Debug\GameServer.exe
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameServer\GameServer\bin\Debug\GameServer.pdb
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameServer\GameServer\obj\Debug\GameServer.csprojResolveAssemblyReference.cache

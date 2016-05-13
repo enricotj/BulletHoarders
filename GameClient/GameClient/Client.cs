@@ -11,9 +11,22 @@ namespace GameClient
 {
     class Client
     {
+        public static int port;
+
         static void Main(string[] args)
         {
-            Game game = new Game();
+            string name;
+
+            do
+            {
+                Console.Write("Enter a Name (16 char limit): ");
+                name = Console.ReadLine();
+            } while (name.Length > 16);
+
+            Console.Write("Enter Port: ");
+            port = Convert.ToInt32(Console.ReadLine());
+
+            Game game = new Game(name);
             Listener listener = new Listener(game);
 
             Thread gameThread = new Thread(new ThreadStart(game.Run));
@@ -23,19 +36,6 @@ namespace GameClient
             Thread listenThread = new Thread(new ThreadStart(listener.Listen));
             listenThread.Start();
             while (!listenThread.IsAlive) ;
-
-            Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-            //IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
-            //IPAddress ip = hostEntry.AddressList[0];
-
-
-            IPAddress ip = IPAddress.Parse("127.0.0.1");
-            IPEndPoint endPoint = new IPEndPoint(ip, 11200);
-            Int32 port = 22200;
-            byte[] portBytes = BitConverter.GetBytes(port);
-            Console.WriteLine(BitConverter.ToInt32(portBytes, 0));
-            sock.SendTo(portBytes, endPoint);
 
             /*while (true)
             {

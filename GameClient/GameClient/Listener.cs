@@ -24,7 +24,7 @@ namespace GameClient
             byte[] data;
 
             // open up a port for listening
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 22200);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, Client.port);
             UdpClient listener = new UdpClient(endPoint.Port);
 
             while (true)
@@ -32,7 +32,7 @@ namespace GameClient
                 // receive and print message
                 data = listener.Receive(ref endPoint);
                 string msg = Encoding.ASCII.GetString(data, 0, data.Length);
-                Console.WriteLine("{0} --> {1}", endPoint.Address.ToString(), msg);
+                Console.WriteLine(endPoint.Address.ToString());
 
                 // handle received data on new thread so that we can immediately go back to listening
                 Thread receiveThread = new Thread(() => receiver.Receive(endPoint.ToString(), data));

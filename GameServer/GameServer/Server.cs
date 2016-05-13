@@ -28,4 +28,18 @@ namespace GameServer
         }
 
     }
+
+    public enum CellType
+    {
+        Empty = 0,
+        Filled = 1,
+        SlantNE = 2,
+        SlantNW = 3,
+        SlantSW = 4,
+        SlantSE = 5,
+        EdgeE = 6,
+        EdgeN = 7,
+        EdgeW = 8,
+        EdgeS = 9
+    }
 }
