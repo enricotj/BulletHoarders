@@ -34,6 +34,7 @@ public class Game : Singleton<Game> {
 
     private Dictionary<int, GameObject> players = new Dictionary<int, GameObject>();
     private Dictionary<int, GameObject> bullets = new Dictionary<int, GameObject>();
+    private Dictionary<int, Color> colors = new Dictionary<int, Color>();
 
 	// Use this for initialization
 	void Awake () {
@@ -58,7 +59,7 @@ public class Game : Singleton<Game> {
 
         sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-        IPAddress ip = IPAddress.Parse("127.0.0.1");
+        IPAddress ip = IPAddress.Parse("137.112.155.138");
         serverEndPoint = new IPEndPoint(ip, 11200);
         byte[] handshake = new byte[sizeof(int) + playerName.Length * 2];
 
@@ -165,11 +166,14 @@ public class Game : Singleton<Game> {
                                     GameObject player = (GameObject)Instantiate(playerPrefab, new Vector3(x, y, -10), Quaternion.identity);
                                     player.GetComponent<Player>().id = id;
                                     players.Add(id, player);
+                                    colors.Add(id, Color.HSVToRGB(UnityEngine.Random.value, UnityEngine.Random.value * 0.3f + 0.7f, 1));
+                                    player.GetComponent<SpriteRenderer>().color = colors[id];
                                 }
                                 else
                                 {
                                     Player player = players[id].GetComponent<Player>();
                                     player.transform.position = new Vector3(x, y, player.transform.position.z);
+                                    player.transform.rotation = Quaternion.Euler(0, 0, r);
                                 }
 
                                 ids.Add(id);
@@ -198,6 +202,9 @@ public class Game : Singleton<Game> {
                                 int id = BitConverter.ToInt32(data.SubArray(i, 4), 0);
                                 i += 4;
 
+                                int pid = BitConverter.ToInt32(data.SubArray(i, 4), 0);
+                                i += 4;
+
                                 float x = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                 i += 4;
                                 float y = BitConverter.ToSingle(data.SubArray(i, 4), 0);
@@ -212,8 +219,8 @@ public class Game : Singleton<Game> {
                                 if (!bullets.ContainsKey(id))
                                 {
                                     GameObject bullet = (GameObject)Instantiate(bulletPrefab, new Vector3(x, y, -20), Quaternion.identity);
+                                    bullet.GetComponent<SpriteRenderer>().color = colors[pid];
                                     bullets.Add(id, bullet);
-                                    Debug.Log("BULLET");
                                 }
                                 else
                                 {
@@ -233,7 +240,6 @@ public class Game : Singleton<Game> {
                             }
                             foreach (int id in destroy)
                             {
-                                Debug.Log("Bullet Destroyed: " + id);
                                 Destroy(bullets[id]);
                                 bullets.Remove(id);
                             }

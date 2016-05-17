@@ -235,6 +235,8 @@ namespace GameServer
                         bullet.id = nextBulletId;
                         nextBulletId++;
                         newBullets.Add(bullet);
+
+                        player.bullets--;
                     }
                     player.shoot = false;
                 }
@@ -278,7 +280,7 @@ namespace GameServer
                     bool collision = false;
                     for (int c = ncol - 1; c <= ncol + 1; c++)
                     {
-                        foreach (Player player in cells[ncol, nrow].GetPlayers())
+                        foreach (Player player in cells[c, r].GetPlayers())
                         {
                             if (player.invTime <= 0 && moving && bullet.pid != player.id && player.CollidesWith(bullet))
                             {
@@ -308,6 +310,7 @@ namespace GameServer
                             if (!moving && player.CollidesWith(bullet))
                             {
                                 player.bullets++;
+                                Console.WriteLine("{0}, {1} -- {2}", c, r, player.bullets);
                                 pickedBullets.Add(bullet);
                             }
                         }

@@ -30,7 +30,7 @@ public class Player : MonoBehaviour {
 
             bool sentRot = false;
             float rot = transform.rotation.eulerAngles.z;
-            if (Mathf.Abs(rot - prot) > Mathf.PI / 8)
+            if (Mathf.Abs(rot - prot) > 5)
             {
                 Game.Instance.Send(rot);
                 prot = rot;

@@ -35,6 +35,9 @@ namespace GameServer
             byte[] temp = BitConverter.GetBytes(id);
             data = data.Concat(temp).ToArray();
 
+            temp = BitConverter.GetBytes(pid);
+            data = data.Concat(temp).ToArray();
+
             temp = BitConverter.GetBytes(x);
             data = data.Concat(temp).ToArray();
             temp = BitConverter.GetBytes(y);
