@@ -13,8 +13,13 @@ using GameServer;
 
 namespace GameServer
 {
-    public class Game : Receiver
+    public class Game
     {
+        private float maxDt = 0;
+
+        private Queue<Message> messages = new Queue<Message>();
+        private object _queueLock = new object();
+
         private int updateWidth = 12;
         private int updateHeight = 7;
 
@@ -26,14 +31,18 @@ namespace GameServer
         private const int MAX_PLAYERS = 50;
         private int nextPlayerId = 0;
 
+        private int nextBulletId = 0;
+
         private Cave level;
         private Cell[,] cells;
 
         public static float ANGLE = (float)Math.Sqrt(2)/2;
 
-        private const float PLAYER_SPEED = 5.0f;
-        private const float BULLET_SPEED = 10.0f;
+        private const float PLAYER_SPEED = 10.0f;
+        private const float BULLET_SPEED = 20.0f;
         public static float BULLET_SIZE = 0.125f;
+
+        private List<Bullet> newBullets = new List<Bullet>();
 
         public Game()
         {
@@ -54,11 +63,33 @@ namespace GameServer
                     cells[c, r] = new Cell();
                 }
             }
+
+            // open up a port for listening
+            UdpClient listener = new UdpClient(11200);
+            listener.BeginReceive(new AsyncCallback(Receive), listener);
+
+            Console.WriteLine("INITIALIZATION COMPLETE");
         }
 
-        public void Receive(string source, byte[] data)
+        private void Receive(IAsyncResult result)
         {
-            Console.WriteLine("DATA RECEIVED");
+            lock (_queueLock)
+            {
+                UdpClient client = result.AsyncState as UdpClient;
+                IPEndPoint source = new IPEndPoint(0, 0);
+                byte[] data = client.EndReceive(result, ref source);
+
+                messages.Enqueue(new Message(source.Address.ToString(), data));
+                //Console.WriteLine("DATA RECEIVED");
+
+                client.BeginReceive(new AsyncCallback(Receive), client);
+            }
+        }
+
+        private void HandleMessage(Message msg)
+        {
+            string source = msg.source;
+            byte[] data = msg.data;
 
             if (!clients.ContainsKey(source))
             {
@@ -74,18 +105,15 @@ namespace GameServer
                 Console.WriteLine(name);
 
                 clients.Add(source, new Player(name, cep, nextPlayerId));
-                nextPlayerId++;
 
                 // send initial level data
-                byte[] initData = level.GetBytes();
-                
-                // TODO: send playerNameMap
-                //initData = initData.Concat(playerMap).ToArray();
-                
-                // TODO: send player id
+                byte[] initData = BitConverter.GetBytes(nextPlayerId);
+                initData = initData.Concat(level.GetBytes()).ToArray();
 
                 // SEND
                 sock.SendTo(initData, cep);
+
+                nextPlayerId++;
             }
             else
             {
@@ -104,7 +132,7 @@ namespace GameServer
                     cells[gp.columm, gp.row].AddPlayer(player);
 
                     // send scene packet to player
-                    byte[] scene = this.GetScene(gp.columm, gp.row);
+                    byte[] scene = GetAllData();
                     sock.SendTo(scene, player.EndPoint);
                 }
                 else
@@ -127,7 +155,7 @@ namespace GameServer
                             break;
                         case 30:
                             player.down = true;
-                            player.down = false;
+                            player.up = false;
                             break;
 
                         // key releases for left, right, up, down
@@ -149,9 +177,15 @@ namespace GameServer
                             player.shoot = true;
                             break;
 
+                        case 50:
+                            // update rotation
+                            player.r = BitConverter.ToSingle(data, 1);
+                            break;
+
                         // player disconnected
                         case 200:
-                            // TODO: add player to list to be safely disconnected later
+                            // TODO
+                            clients.Remove(source);
                             break;
                     }
                 }
@@ -167,7 +201,7 @@ namespace GameServer
                 {
                     continue;
                 }
-
+                
                 player.CalculateVelocity();
 
                 // wall collision logic
@@ -193,10 +227,15 @@ namespace GameServer
 
                 if (player.shoot)
                 {
-                    Bullet bullet = new Bullet(player.x, player.y, player.id);
-                    bullet.vx = (float)Math.Cos(player.r);
-                    bullet.vy = (float)Math.Sin(player.r);
-                    bullets.Add(bullet);
+                    if (player.bullets > 0)
+                    {
+                        Bullet bullet = new Bullet(player.x, player.y, player.id);
+                        bullet.vx = (float)Math.Cos(player.r * Math.PI / 180);
+                        bullet.vy = (float)Math.Sin(player.r * Math.PI / 180);
+                        bullet.id = nextBulletId;
+                        nextBulletId++;
+                        newBullets.Add(bullet);
+                    }
                     player.shoot = false;
                 }
             }
@@ -248,14 +287,19 @@ namespace GameServer
 
                                 for (int i = 0; i < player.bullets; i++)
                                 {
-                                    spawnedBullets.Add(new Bullet(player.x, player.y, player.id));
+                                    Bullet b = new Bullet(player.x, player.y, player.id);
+                                    b.id = nextBulletId;
+                                    nextBulletId++;
+                                    spawnedBullets.Add(b);
                                 }
 
-                                // TODO: kill player
+                                // Kill Player
+                                player.alive = false;
 
-                                // TODO: update scoreboard
+                                // TODO: Update Scoreboard
 
-                                // TODO: add status message to queue "X eliminated Y"
+                                // TODO: Add status message to queue "X eliminated Y"
+
 
                                 collision = true;
                                 break;
@@ -287,7 +331,9 @@ namespace GameServer
             }
 
             // spawn dropped bullets
-            bullets.AddRange(spawnedBullets);
+            newBullets.AddRange(spawnedBullets);
+
+            bullets.AddRange(newBullets);
         }
 
         public void Run()
@@ -295,15 +341,23 @@ namespace GameServer
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
+            Stopwatch broadcastTimer = new Stopwatch();
+            broadcastTimer.Start();
+
             while (true)
             {
-                //Console.WriteLine("Game is running...");
+                // Handle all received messages
+                lock (_queueLock)
+                {
+                    while (messages.Count > 0)
+                    {
+                        HandleMessage(messages.Dequeue());
+                    }
+                }
 
                 // Calculate DeltaTime
                 float dt = watch.ElapsedMilliseconds/1000.0f;
                 watch.Restart();
-
-                // TODO: remove disconnected players
 
                 // Run game logic
                 UpdatePlayers(dt);
@@ -319,16 +373,20 @@ namespace GameServer
                  *  - Scoreboard data
                  *  - State log (player X has killed player Y)
                  */
-                foreach (Player p in clients.Values)
+                long bdt = broadcastTimer.ElapsedMilliseconds;
+                if (bdt > 40)
                 {
-                    // send player states
-                    
-                    // send bullet states
-
-                    // sock.SendTo(data, p.EndPoint);
+                    byte[] data = GetAllData();
+                    foreach (Player p in clients.Values)
+                    {
+                        sock.SendTo(data, p.EndPoint);
+                    }
+                    broadcastTimer.Restart();
                 }
-                
-                Thread.Sleep(1000);
+
+                newBullets.Clear();
+
+                Thread.Sleep(1);
             }
         }
 
@@ -338,6 +396,10 @@ namespace GameServer
             float y = player.y;
             float vx = player.vx;
             float vy = player.vy;
+            if (vx == 0 && vy == 0)
+            {
+                return;
+            }
             float r = (float)Math.Atan2(vy, vx);
             float cx, cy, ccx, ccy;
             cx = (float)Math.Cos(r - Math.PI / 4);
@@ -347,8 +409,8 @@ namespace GameServer
 
             // collision booleans for...
             bool a, b; // ... counter, mid, clockwise (relative to velocity)
-            a = level.Collision(x + ccx, y + ccy);
-            b = level.Collision(x + cx, y + cy);
+            a = level.Collision(x + ccx * 0.5f, y + ccy * 0.5f);
+            b = level.Collision(x + cx * 0.5f, y + cy * 0.5f);
 
             if (a && b)
             {
@@ -382,7 +444,7 @@ namespace GameServer
 
             // collision booleans for...
             bool b, a, c; // ... counter, mid, clockwise (relative to velocity)
-            a = level.Collision(x + vx, y + vy);
+            a = level.Collision(x + vx * BULLET_SIZE, y + vy * BULLET_SIZE);
             b = level.Collision(x + ccx * BULLET_SIZE, y + ccy * BULLET_SIZE);
             c = level.Collision(x + cx * BULLET_SIZE, y + cy * BULLET_SIZE);
 
@@ -418,6 +480,35 @@ namespace GameServer
                     }
                 }
             }
+
+            return code.Concat(playerData).Concat(delim).Concat(bulletData).ToArray();
+        }
+
+        private byte[] GetAllData()
+        {
+            byte[] code = { 100 };
+            byte[] delim = BitConverter.GetBytes(float.MaxValue);
+
+            byte[] playerData = { };
+            byte[] bulletData = { };
+
+            for (int r = 0; r < Cave.caveHeight; r++)
+            {
+                for (int c = 0; c < Cave.caveWidth; c++)
+                {
+                    foreach (Player player in cells[c, r].GetPlayers())
+                    {
+                        byte[] data = player.GetBytes();
+                        playerData = playerData.Concat(data).ToArray();
+                    }
+                }
+            }
+
+            foreach (Bullet b in bullets)
+	        {
+                byte[] data = b.GetBytes();
+                bulletData = bulletData.Concat(data).ToArray();
+	        }
 
             return code.Concat(playerData).Concat(delim).Concat(bulletData).ToArray();
         }

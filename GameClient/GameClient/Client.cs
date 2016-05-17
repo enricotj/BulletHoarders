@@ -23,6 +23,9 @@ namespace GameClient
                 name = Console.ReadLine();
             } while (name.Length > 16);
 
+            byte[] nameBytes = Encoding.ASCII.GetBytes(name);
+            Console.WriteLine((int)nameBytes[3]);
+
             Console.Write("Enter Port: ");
             port = Convert.ToInt32(Console.ReadLine());
 

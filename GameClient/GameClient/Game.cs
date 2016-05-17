@@ -70,6 +70,16 @@ namespace GameClient
                 byte[] ready = {255};
                 sock.SendTo(ready, serverEndPoint);
             }
+            else
+            {
+                int code = data[0];
+                switch (code)
+                {
+                    case 100:
+
+                        break;
+                }
+            }
         }
 
         public void Run()

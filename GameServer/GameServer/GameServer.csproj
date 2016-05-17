@@ -47,9 +47,8 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="GridPoint.cs" />
-    <Compile Include="Listener.cs" />
+    <Compile Include="Message.cs" />
     <Compile Include="Player.cs" />
-    <Compile Include="Receiver.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

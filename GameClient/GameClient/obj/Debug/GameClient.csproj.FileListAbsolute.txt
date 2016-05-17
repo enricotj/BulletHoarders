@@ -8,3 +8,4 @@ C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameClient\GameClient\obj\Debu
 C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameClient\GameClient\obj\Debug\GameClient.pdb
 C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameClient\GameClient\bin\Debug\GameClient.exe
 C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameClient\GameClient\bin\Debug\GameClient.pdb
+C:\Users\enricotj\Documents\GitHub\BulletHoarders\GameClient\GameClient\obj\Debug\GameClient.csprojResolveAssemblyReference.cache

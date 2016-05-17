@@ -11,6 +11,8 @@ namespace GameServer
         // keeps track of the player id who shot this bullet
         public int pid;
 
+        public int id;
+
         public float x;
         public float y;
 
@@ -29,20 +31,20 @@ namespace GameServer
 
         public byte[] GetBytes()
         {
-            int n = 0;
-            byte[] data = new byte[sizeof(float) * 4];
-            byte[] temp = BitConverter.GetBytes(x);
-            temp.CopyTo(data, n);
-            n += temp.Length;
+            byte[] data = { };
+            byte[] temp = BitConverter.GetBytes(id);
+            data = data.Concat(temp).ToArray();
+
+            temp = BitConverter.GetBytes(x);
+            data = data.Concat(temp).ToArray();
             temp = BitConverter.GetBytes(y);
-            temp.CopyTo(data, n);
-            n += temp.Length;
+            data = data.Concat(temp).ToArray();
+            
             temp = BitConverter.GetBytes(vx);
-            temp.CopyTo(data, n);
-            n += temp.Length;
+            data = data.Concat(temp).ToArray();
             temp = BitConverter.GetBytes(vy);
-            temp.CopyTo(data, n);
-            n += temp.Length;
+            data = data.Concat(temp).ToArray();
+            
             return data;
         }
     }

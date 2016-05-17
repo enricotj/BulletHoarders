@@ -10,19 +10,19 @@ namespace GameServer
     public class Player
     {
         // limit to 16 characters (17 including \0)
-        private const int NAME_LENGTH = 16;
+        private const int NAME_LENGTH = 32;
 
         public string name;
 
         private IPEndPoint endPoint;
 
-        public float x;
-        public float y;
+        public float x = 0;
+        public float y = 0;
 
-        public float vx;
-        public float vy;
+        public float vx = 0;
+        public float vy = 0;
 
-        public float r;
+        public float r = 0;
 
         public int bullets = 5;
 
@@ -38,6 +38,8 @@ namespace GameServer
         public bool shoot = false;
 
         public bool left, right, up, down;
+
+        public bool alive = true;
 
         public Player(string name, IPEndPoint endPoint, float x, float y, int id)
         {
@@ -116,20 +118,30 @@ namespace GameServer
         {
             // id, x, y, vx, vy, r
             byte[] data = { };
-            byte[] temp = BitConverter.GetBytes(id);
+            byte[] temp = Encoding.ASCII.GetBytes(name);
+            data = data.Concat(temp).ToArray();
+
+            byte[] pad = new byte[NAME_LENGTH - temp.Length];
+            for (int i = 0; i < pad.Length; i++)
+            {
+                pad[i] = 0x00;
+            }
+            data = data.Concat(pad).ToArray();
+
+            temp = BitConverter.GetBytes(id);
             data = data.Concat(temp).ToArray();
 
             temp = BitConverter.GetBytes(x);
             data = data.Concat(temp).ToArray();
-
             temp = BitConverter.GetBytes(y);
             data = data.Concat(temp).ToArray();
             
+            /*
             temp = BitConverter.GetBytes(vx);
             data = data.Concat(temp).ToArray();
-            
             temp = BitConverter.GetBytes(vy);
             data = data.Concat(temp).ToArray();
+            */
 
             temp = BitConverter.GetBytes(r);
             data = data.Concat(temp).ToArray();

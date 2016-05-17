@@ -16,15 +16,7 @@ namespace GameServer
         static void Main(string[] args)
         {
             Game game = new Game();
-            Listener listener = new Listener(game, PORT);
-
-            Thread gameThread = new Thread(new ThreadStart(game.Run));
-            gameThread.Start();
-            while (!gameThread.IsAlive) ;
-
-            Thread listenThread = new Thread(new ThreadStart(listener.Listen));
-            listenThread.Start();
-            while (!listenThread.IsAlive) ;
+            game.Run();
         }
 
     }

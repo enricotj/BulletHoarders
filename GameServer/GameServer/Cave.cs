@@ -11,8 +11,8 @@ namespace GameServer
         private byte[] data;
 
         public CellType[,] grid;
-        public static int caveWidth = 10; // 0 < w <= 255
-        public static int caveHeight = 24; // 0 < h <= 255
+        public static int caveWidth = 50; // 0 < w <= 255
+        public static int caveHeight = 40; // 0 < h <= 255
 
         // cave generation variables
         private float fillRatio = 0.45f;
@@ -133,12 +133,12 @@ namespace GameServer
         {
             if (data == null)
             {
-                data = new byte[caveWidth * caveHeight + 1];
+                data = new byte[caveWidth * caveHeight + 2];
 
                 // first entry is the length of each row
                 data[0] = (byte)caveWidth;
-
-                int i = 1;
+                data[1] = (byte)caveHeight;
+                int i = 2;
 
                 for (int r = 0; r < caveHeight; r++)
                 {
@@ -378,7 +378,7 @@ namespace GameServer
             }
             if (r > 0 && grid[c, r - 1] == CellType.Empty)
             {
-                grid[c, r] = CellType.EdgeN;
+                grid[c, r] = CellType.EdgeS;
                 return true;
             }
             if (c > 0 && grid[c - 1, r] == CellType.Empty)
@@ -388,7 +388,7 @@ namespace GameServer
             }
             if (r < caveHeight - 1 && grid[c, r + 1] == CellType.Empty)
             {
-                grid[c, r] = CellType.EdgeS;
+                grid[c, r] = CellType.EdgeN;
                 return true;
             }
             return false;
