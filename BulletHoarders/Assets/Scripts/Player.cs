@@ -5,9 +5,17 @@ public class Player : MonoBehaviour {
 
     public int id;
 
+    public string name;
+
     private GameObject cam;
 
     private float prot = 0;
+
+    public Vector3 target = new Vector3();
+
+    private float maxSpeed = 10.0f;
+
+    public GameObject label;
 
 	// Use this for initialization
 	void Start () {
@@ -17,6 +25,19 @@ public class Player : MonoBehaviour {
 	// Update is called once per frame
 	void Update ()
     {
+        Vector3 dir = (target - transform.position).normalized;
+
+        if (Vector3.Distance(transform.position, target) < maxSpeed * Time.deltaTime)
+        {
+            transform.position = target;
+        }
+        else
+        {
+            transform.position += dir * maxSpeed * Time.deltaTime;
+        }
+
+        label.transform.position = this.transform.position - new Vector3(0, -0.35f, 1);
+
         if (id == Game.Instance.playerId)
         {
             cam = GameObject.Find("Main Camera");
@@ -84,6 +105,11 @@ public class Player : MonoBehaviour {
             }
         }
 	}
+
+    void OnDestroy()
+    {
+        Destroy(label);
+    }
 
     private float AngleBetweenTwoPoints(Vector3 a, Vector3 b)
     {

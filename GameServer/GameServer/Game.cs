@@ -104,7 +104,9 @@ namespace GameServer
                 string name = Encoding.ASCII.GetString(nameData);
                 Console.WriteLine(name);
 
-                clients.Add(source, new Player(name, cep, nextPlayerId));
+                Player player = new Player(name, cep, nextPlayerId);
+                player.source = source;
+                clients.Add(source, player);
 
                 // send initial level data
                 byte[] initData = BitConverter.GetBytes(nextPlayerId);
@@ -184,7 +186,8 @@ namespace GameServer
 
                         // player disconnected
                         case 200:
-                            // TODO
+                            Player disc = clients[source];
+                            cells[disc.col, disc.row].RemovePlayer(disc.id);
                             clients.Remove(source);
                             break;
                     }
@@ -247,6 +250,7 @@ namespace GameServer
         {
             List<Bullet> spawnedBullets = new List<Bullet>();
             List<Bullet> pickedBullets = new List<Bullet>();
+            List<Player> dead = new List<Player>();
 
             foreach (Bullet bullet in bullets)
             {
@@ -296,7 +300,7 @@ namespace GameServer
                                 }
 
                                 // Kill Player
-                                player.alive = false;
+                                dead.Add(player);
 
                                 // TODO: Update Scoreboard
 
@@ -310,7 +314,6 @@ namespace GameServer
                             if (!moving && player.CollidesWith(bullet))
                             {
                                 player.bullets++;
-                                Console.WriteLine("{0}, {1} -- {2}", c, r, player.bullets);
                                 pickedBullets.Add(bullet);
                             }
                         }
@@ -324,6 +327,13 @@ namespace GameServer
                         break;
                     }
                 }
+            }
+
+            // destroy killed players
+            foreach (Player player in dead)
+            {
+                cells[player.col, player.row].RemovePlayer(player.id);
+                clients.Remove(player.source);
             }
 
             // destroy picked bullets

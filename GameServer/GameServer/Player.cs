@@ -14,6 +14,7 @@ namespace GameServer
 
         public string name;
 
+        public string source;
         private IPEndPoint endPoint;
 
         public float x = 0;

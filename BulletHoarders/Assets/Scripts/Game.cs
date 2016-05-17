@@ -19,7 +19,7 @@ public class Game : Singleton<Game> {
     private Socket sock;
     private EndPoint serverEndPoint;
 
-    private string playerName;
+    public string playerName;
 
     private Queue<byte[]> messages = new Queue<byte[]>();
     private object _queueLock = new object();
@@ -30,17 +30,25 @@ public class Game : Singleton<Game> {
     private GameObject playerPrefab;
     private GameObject bulletPrefab;
 
+    private GameObject labelPrefab;
+
     public int playerId;
 
     private Dictionary<int, GameObject> players = new Dictionary<int, GameObject>();
     private Dictionary<int, GameObject> bullets = new Dictionary<int, GameObject>();
     private Dictionary<int, Color> colors = new Dictionary<int, Color>();
 
+    private const string HOST = "137.112.222.60";
+    private const string LOCAL = "127.0.0.1";
+
 	// Use this for initialization
-	void Awake () {
+	public void Connect (string playerName) {
+        this.playerName = playerName;
+
         tilePrefab = (GameObject)Resources.Load("Prefabs/Tile", typeof(GameObject));
         playerPrefab = (GameObject)Resources.Load("Prefabs/Player", typeof(GameObject));
         bulletPrefab = (GameObject)Resources.Load("Prefabs/Bullet", typeof(GameObject));
+        labelPrefab = (GameObject)Resources.Load("Prefabs/Label", typeof(GameObject));
 
         tileSprites = new Sprite[9];
         tileSprites[0] = (Sprite)Resources.Load("Sprites/Filled", typeof(Sprite));
@@ -53,13 +61,9 @@ public class Game : Singleton<Game> {
         tileSprites[7] = (Sprite)Resources.Load("Sprites/West", typeof(Sprite));
         tileSprites[8] = (Sprite)Resources.Load("Sprites/South", typeof(Sprite));
 
-        Debug.Log("GAME AWAKE");
-
-        playerName = "PLAYER";
-
         sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-        IPAddress ip = IPAddress.Parse("137.112.155.138");
+        IPAddress ip = IPAddress.Parse(HOST);
         serverEndPoint = new IPEndPoint(ip, 11200);
         byte[] handshake = new byte[sizeof(int) + playerName.Length * 2];
 
@@ -168,11 +172,16 @@ public class Game : Singleton<Game> {
                                     players.Add(id, player);
                                     colors.Add(id, Color.HSVToRGB(UnityEngine.Random.value, UnityEngine.Random.value * 0.3f + 0.7f, 1));
                                     player.GetComponent<SpriteRenderer>().color = colors[id];
+                                    player.GetComponent<Player>().target = player.transform.position;
+
+                                    GameObject label = (GameObject)GameObject.Instantiate(labelPrefab);
+                                    player.GetComponent<Player>().label = label;
+                                    label.GetComponent<TextMesh>().text = name;
                                 }
                                 else
                                 {
                                     Player player = players[id].GetComponent<Player>();
-                                    player.transform.position = new Vector3(x, y, player.transform.position.z);
+                                    player.target = new Vector3(x, y, player.transform.position.z);
                                     player.transform.rotation = Quaternion.Euler(0, 0, r);
                                 }
 
@@ -221,11 +230,12 @@ public class Game : Singleton<Game> {
                                     GameObject bullet = (GameObject)Instantiate(bulletPrefab, new Vector3(x, y, -20), Quaternion.identity);
                                     bullet.GetComponent<SpriteRenderer>().color = colors[pid];
                                     bullets.Add(id, bullet);
+                                    bullet.GetComponent<Bullet>().target = bullet.transform.position;
                                 }
                                 else
                                 {
                                     Bullet bullet = bullets[id].GetComponent<Bullet>();
-                                    bullet.transform.position = new Vector3(x, y, bullet.transform.position.z);
+                                    bullet.target = new Vector3(x, y, bullet.transform.position.z);
                                 }
                                 
                                 ids.Add(id);
@@ -276,6 +286,12 @@ public class Game : Singleton<Game> {
         byte[] data = { (byte)cmd };
         sock.SendTo(data, serverEndPoint);
     }
+
+    void OnApplicationQuit()
+    {
+        byte[] data = { (byte)Command.Disconnect };
+        sock.SendTo(data, serverEndPoint);
+    }
 }
 
 public enum Command
@@ -289,7 +305,8 @@ public enum Command
     DownPress = 30,
     DownRelease = 130,
     Shoot = 40,
-    Rotate = 50
+    Rotate = 50,
+    Disconnect = 200
 }
 
 public enum CellType
