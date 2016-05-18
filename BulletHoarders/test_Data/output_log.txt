@@ -14,63 +14,19 @@ Platform assembly: C:\Users\enricotj\Desktop\BulletHoarders\BulletHoarders\test_
 Loading C:\Users\enricotj\Desktop\BulletHoarders\BulletHoarders\test_Data\Managed\UnityEngine.UI.dll into Unity Child Domain
 Platform assembly: C:\Users\enricotj\Desktop\BulletHoarders\BulletHoarders\test_Data\Managed\UnityEngine.Networking.dll (this message is harmless)
 Loading C:\Users\enricotj\Desktop\BulletHoarders\BulletHoarders\test_Data\Managed\UnityEngine.Networking.dll into Unity Child Domain
-- Completed reload, in  0.114 seconds
+- Completed reload, in  0.087 seconds
 Platform assembly: C:\Users\enricotj\Desktop\BulletHoarders\BulletHoarders\test_Data\Managed\System.Core.dll (this message is harmless)
 Platform assembly: C:\Users\enricotj\Desktop\BulletHoarders\BulletHoarders\test_Data\Managed\System.dll (this message is harmless)
 desktop: 1920x1080 60Hz; virtual: 3840x1080 at -1920,0
 <RI> Initializing input.
 <RI> Input initialized.
 <RI> Initialized touch support.
-UnloadTime: 0.618749 ms
+UnloadTime: 0.813308 ms
 [Singleton] An instance of Game is needed in the scene, so '(singleton) Game (UnityEngine.GameObject)' was created with DontDestroyOnLoad.
  
 (Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
 
-ID: 1
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-Level Width: 50
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-Level Height: 40
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-LEVEL DATA RECEIVED
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-Unloading 5 Unused Serialized files (Serialized files now loaded: 0)
-UnloadTime: 1.031676 ms
-
-Unloading 22 unused Assets to reduce memory usage. Loaded Objects now: 233.
-Total: 0.276990 ms (FindLiveObjects: 0.117503 ms CreateObjectMapping: 0.007423 ms MarkObjects: 0.121855 ms  DeleteObjects: 0.020735 ms)
-
-ID: 3
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-Level Width: 50
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-Level Height: 40
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-LEVEL DATA RECEIVED
- 
-(Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
-
-Unloading 4 Unused Serialized files (Serialized files now loaded: 0)
-UnloadTime: 1.115643 ms
-
-Unloading 21 unused Assets to reduce memory usage. Loaded Objects now: 233.
-Total: 0.423166 ms (FindLiveObjects: 0.246783 ms CreateObjectMapping: 0.007167 ms MarkObjects: 0.142591 ms  DeleteObjects: 0.025855 ms)
-
-ID: 4
+ID: 0
  
 (Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
 
@@ -87,5 +43,5 @@ LEVEL DATA RECEIVED
 (Filename: C:/buildslave/unity/build/artifacts/generated/common/runtime/UnityEngineDebugBindings.gen.cpp Line: 37)
 
 Setting up 2 worker threads for Enlighten.
-  Thread -> id: 2c48 -> priority: 1 
-  Thread -> id: 2634 -> priority: 1 
+  Thread -> id: 18ec -> priority: 1 
+  Thread -> id: 2cf4 -> priority: 1 

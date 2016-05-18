@@ -79,9 +79,9 @@ public class Player : MonoBehaviour {
             //cam.transform.position = new Vector3(transform.position.x, transform.position.y, cam.transform.position.z);
 
             // mouse aim
-            Vector2 positionOnScreen = cam.GetComponent<Camera>().WorldToViewportPoint(transform.position);
-            Vector2 mouseOnScreen = (Vector2)cam.GetComponent<Camera>().ScreenToViewportPoint(Input.mousePosition);
-            float angle = AngleBetweenTwoPoints(positionOnScreen, mouseOnScreen) + 180;
+            Vector2 positionInWorld = new Vector2(transform.position.x, transform.position.y);
+            mouseInWorld = (Vector2)cam.GetComponent<Camera>().ScreenToWorldPoint(Input.mousePosition);
+            float angle = AngleBetweenTwoPoints(positionInWorld, mouseInWorld) + 180;
             transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
 
             float rot = transform.rotation.eulerAngles.z;
