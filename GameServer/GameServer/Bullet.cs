@@ -9,7 +9,7 @@ namespace GameServer
     public class Bullet
     {
         // keeps track of the player id who shot this bullet
-        public int pid;
+        public byte pid;
 
         public int id;
 
@@ -22,7 +22,7 @@ namespace GameServer
         public int col;
         public int row;
 
-        public Bullet(float x, float y, int pid)
+        public Bullet(float x, float y, byte pid)
         {
             this.x = x;
             this.y = y;
@@ -35,17 +35,12 @@ namespace GameServer
             byte[] temp = BitConverter.GetBytes(id);
             data = data.Concat(temp).ToArray();
 
-            temp = BitConverter.GetBytes(pid);
-            data = data.Concat(temp).ToArray();
+            byte[] temp2 = { pid };
+            data = data.Concat(temp2).ToArray();
 
             temp = BitConverter.GetBytes(x);
             data = data.Concat(temp).ToArray();
             temp = BitConverter.GetBytes(y);
-            data = data.Concat(temp).ToArray();
-            
-            temp = BitConverter.GetBytes(vx);
-            data = data.Concat(temp).ToArray();
-            temp = BitConverter.GetBytes(vy);
             data = data.Concat(temp).ToArray();
             
             return data;

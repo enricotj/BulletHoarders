@@ -19,7 +19,7 @@ public class Game : Singleton<Game> {
     private Socket sock;
     private EndPoint serverEndPoint;
 
-    public string playerName;
+    public string playerName = "PlayerName";
 
     private Queue<byte[]> messages = new Queue<byte[]>();
     private object _queueLock = new object();
@@ -123,9 +123,9 @@ public class Game : Singleton<Game> {
                     byte[] data = messages.Dequeue();
                     if (level == null)
                     {
-                        playerId = BitConverter.ToInt32(data.SubArray(0, 4), 0);
-                        int width = (int)data[4];
-                        int height = (int)data[5];
+                        playerId = data[0];
+                        int width = (int)data[1];
+                        int height = (int)data[2];
                         Debug.Log("ID: " + playerId);
                         Debug.Log("Level Width: " + width);
                         Debug.Log("Level Height: " + height);
@@ -134,7 +134,7 @@ public class Game : Singleton<Game> {
                         {
                             for (int c = 0; c < width; c++)
                             {
-                                int i = r * width + c + 6;
+                                int i = r * width + c + 3;
                                 level[c, r] = (CellType)data[i];
 
                                 if (level[c, r] != CellType.Empty)
@@ -172,20 +172,13 @@ public class Game : Singleton<Game> {
                                     string name = Encoding.ASCII.GetString(data.SubArray(i, 32));
                                     i += 32;
 
-                                    int id = BitConverter.ToInt32(data.SubArray(i, 4), 0);
-                                    i += 4;
+                                    int id = data[i];
+                                    i += 1;
 
                                     float x = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                     i += 4;
                                     float y = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                     i += 4;
-
-                                    /*
-                                    float vx = BitConverter.ToSingle(data.SubArray(i, 4), 0);
-                                    i += 4;
-                                    float vy = BitConverter.ToSingle(data.SubArray(i, 4), 0);
-                                    i += 4;
-                                    */
 
                                     float r = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                     i += 4;
@@ -246,18 +239,12 @@ public class Game : Singleton<Game> {
                                     int id = BitConverter.ToInt32(data.SubArray(i, 4), 0);
                                     i += 4;
 
-                                    int pid = BitConverter.ToInt32(data.SubArray(i, 4), 0);
-                                    i += 4;
+                                    int pid = data[i];
+                                    i += 1;
 
                                     float x = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                     i += 4;
                                     float y = BitConverter.ToSingle(data.SubArray(i, 4), 0);
-                                    i += 4;
-
-
-                                    float vx = BitConverter.ToSingle(data.SubArray(i, 4), 0);
-                                    i += 4;
-                                    float vy = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                     i += 4;
 
                                     if (!bullets.ContainsKey(id))

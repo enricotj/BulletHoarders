@@ -27,7 +27,7 @@ namespace GameServer
 
         public int bullets = 5;
 
-        public int id;
+        public byte id;
 
         public bool init;
 
@@ -42,7 +42,7 @@ namespace GameServer
 
         public bool alive = true;
 
-        public Player(string name, IPEndPoint endPoint, float x, float y, int id)
+        public Player(string name, IPEndPoint endPoint, float x, float y, byte id)
         {
             this.name = name;
             this.endPoint = endPoint;
@@ -51,7 +51,7 @@ namespace GameServer
             this.id = id;
         }
 
-        public Player(string name, IPEndPoint endPoint, int id)
+        public Player(string name, IPEndPoint endPoint, byte id)
         {
             this.name = name;
             this.endPoint = endPoint;
@@ -129,20 +129,13 @@ namespace GameServer
             }
             data = data.Concat(pad).ToArray();
 
-            temp = BitConverter.GetBytes(id);
-            data = data.Concat(temp).ToArray();
+            byte[] temp2 = { id };
+            data = data.Concat(temp2).ToArray();
 
             temp = BitConverter.GetBytes(x);
             data = data.Concat(temp).ToArray();
             temp = BitConverter.GetBytes(y);
             data = data.Concat(temp).ToArray();
-            
-            /*
-            temp = BitConverter.GetBytes(vx);
-            data = data.Concat(temp).ToArray();
-            temp = BitConverter.GetBytes(vy);
-            data = data.Concat(temp).ToArray();
-            */
 
             temp = BitConverter.GetBytes(r);
             data = data.Concat(temp).ToArray();

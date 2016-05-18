@@ -3,7 +3,6 @@ using System.Collections;
 
 public class Bullet : MonoBehaviour {
 
-
     private float maxSpeed = 20.0f;
     public Vector3 target = new Vector3();
 

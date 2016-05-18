@@ -17,7 +17,7 @@ namespace GameServer
     {
         private float maxDt = 0;
 
-        private Queue<Message> messages = new Queue<Message>();
+        private Queue<Message> messages;
         private object _queueLock = new object();
 
         private int updateWidth = 12;
@@ -30,7 +30,6 @@ namespace GameServer
 
         private const int MAX_PLAYERS = 50;
         private int nextPlayerId = 0;
-
         private int nextBulletId = 0;
 
         private Cave level;
@@ -42,10 +41,14 @@ namespace GameServer
         private const float BULLET_SPEED = 20.0f;
         public static float BULLET_SIZE = 0.125f;
 
-        private List<Bullet> newBullets = new List<Bullet>();
+        private List<Bullet> newBullets;
+
+        private bool[] playerIds = new bool[255];
 
         public Game()
         {
+            messages = new Queue<Message>();
+            newBullets = new List<Bullet>();
             clients = new Dictionary<string, Player>();
             bullets = new List<Bullet>();
 
@@ -104,18 +107,25 @@ namespace GameServer
                 string name = Encoding.ASCII.GetString(nameData);
                 Console.WriteLine(name);
 
-                Player player = new Player(name, cep, nextPlayerId);
+                Player player = new Player(name, cep, (byte)nextPlayerId);
                 player.source = source;
                 clients.Add(source, player);
 
                 // send initial level data
-                byte[] initData = BitConverter.GetBytes(nextPlayerId);
+                byte[] initData = { (byte)nextPlayerId };
                 initData = initData.Concat(level.GetBytes()).ToArray();
 
                 // SEND
                 sock.SendTo(initData, cep);
 
-                nextPlayerId++;
+                playerIds[nextPlayerId] = true;
+                for (int i = 0; i < playerIds.Length; i++)
+                {
+                    if (!playerIds[i])
+                    {
+                        nextPlayerId = i;
+                    }
+                }
             }
             else if (clients.ContainsKey(source))
             {
@@ -187,7 +197,9 @@ namespace GameServer
                         // player disconnected
                         case 200:
                             Player disc = clients[source];
-                            Console.WriteLine("{0}:{1} disconnected",disc.source, disc.name);
+                            playerIds[disc.id] = false;
+                            Console.WriteLine("{0}:{1} disconnected", disc.source, disc.name);
+
                             cells[disc.col, disc.row].RemovePlayer(disc.id);
                             clients.Remove(source);
                             break;
@@ -290,6 +302,10 @@ namespace GameServer
                     bool collision = false;
                     for (int c = ncol - 1; c <= ncol + 1; c++)
                     {
+                        if (c >= cells.GetLength(0) || r >= cells.GetLength(1) || c < 0 || r < 0)
+                        {
+                            continue;
+                        }
                         foreach (Player player in cells[c, r].GetPlayers())
                         {
                             if (player.invTime <= 0 && moving && bullet.pid != player.id && player.CollidesWith(bullet))
@@ -307,11 +323,6 @@ namespace GameServer
 
                                 // Kill Player
                                 dead.Add(player);
-
-                                // TODO: Update Scoreboard
-
-                                // TODO: Add status message to queue "X eliminated Y"
-
 
                                 collision = true;
                                 break;

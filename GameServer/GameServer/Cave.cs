@@ -11,8 +11,8 @@ namespace GameServer
         private byte[] data;
 
         public CellType[,] grid;
-        public static int caveWidth = 50; // 0 < w <= 255
-        public static int caveHeight = 40; // 0 < h <= 255
+        public static int caveWidth = 30; // 0 < w <= 255
+        public static int caveHeight = 20; // 0 < h <= 255
 
         // cave generation variables
         private float fillRatio = 0.45f;
@@ -33,6 +33,7 @@ namespace GameServer
         // Use this for initialization
         public Cave()
         {
+            data = null;
             rng = new Random();
             fillRatio = (float)(rng.NextDouble() * 0.04 + 0.44);
             cheeseThresh = (int)Math.Floor(caveWidth * caveHeight / 6.0f);

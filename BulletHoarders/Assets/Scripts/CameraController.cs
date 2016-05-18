@@ -9,6 +9,7 @@ public class CameraController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+        pname = Game.Instance.playerName;
 	}
 	
 	// Update is called once per frame
