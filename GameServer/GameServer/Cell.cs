@@ -28,8 +28,10 @@ namespace GameServer
                     break;
                 }
             }
-
-            players.RemoveAt(r);
+            if (players.Count > r)
+            {
+                players.RemoveAt(r);
+            }
         }
 
         public void AddPlayer(Player p)

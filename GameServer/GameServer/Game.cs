@@ -91,7 +91,7 @@ namespace GameServer
             string source = msg.source;
             byte[] data = msg.data;
 
-            if (!clients.ContainsKey(source))
+            if (!clients.ContainsKey(source) && data.Length >= sizeof(int))
             {
                 // add client to list
                 byte[] portData = data.SubArray(0, sizeof(int));
@@ -117,7 +117,7 @@ namespace GameServer
 
                 nextPlayerId++;
             }
-            else
+            else if (clients.ContainsKey(source))
             {
                 Player player = clients[source];
                 if (!player.init && data[0] == 255)
@@ -187,6 +187,7 @@ namespace GameServer
                         // player disconnected
                         case 200:
                             Player disc = clients[source];
+                            Console.WriteLine("{0}:{1} disconnected",disc.source, disc.name);
                             cells[disc.col, disc.row].RemovePlayer(disc.id);
                             clients.Remove(source);
                             break;
@@ -203,6 +204,11 @@ namespace GameServer
                 if (!player.init)
                 {
                     continue;
+                }
+
+                if (player.invTime > 0)
+                {
+                    player.invTime -= dt;
                 }
                 
                 player.CalculateVelocity();
@@ -230,7 +236,7 @@ namespace GameServer
 
                 if (player.shoot)
                 {
-                    if (player.bullets > 0)
+                    if (player.bullets > 0 && player.invTime <= 0)
                     {
                         Bullet bullet = new Bullet(player.x, player.y, player.id);
                         bullet.vx = (float)Math.Cos(player.r * Math.PI / 180);
@@ -333,6 +339,9 @@ namespace GameServer
             foreach (Player player in dead)
             {
                 cells[player.col, player.row].RemovePlayer(player.id);
+
+                byte[] data = { 222 };
+                sock.SendTo(data, player.EndPoint);
                 clients.Remove(player.source);
             }
 
@@ -470,7 +479,7 @@ namespace GameServer
 
         private byte[] GetScene(int col, int row)
         {
-            byte[] code = {100};
+            byte[] code = {111};
             byte[] delim = BitConverter.GetBytes(float.MaxValue);
 
             byte[] playerData = {};
@@ -499,7 +508,7 @@ namespace GameServer
 
         private byte[] GetAllData()
         {
-            byte[] code = { 100 };
+            byte[] code = { 111 };
             byte[] delim = BitConverter.GetBytes(float.MaxValue);
 
             byte[] playerData = { };

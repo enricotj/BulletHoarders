@@ -38,7 +38,7 @@ public class Game : Singleton<Game> {
     private Dictionary<int, GameObject> bullets = new Dictionary<int, GameObject>();
     private Dictionary<int, Color> colors = new Dictionary<int, Color>();
 
-    private const string HOST = "137.112.222.60";
+    private const string HOST = "137.112.155.138";
     private const string LOCAL = "127.0.0.1";
 
 	// Use this for initialization
@@ -85,6 +85,7 @@ public class Game : Singleton<Game> {
         sock.SendTo(handshake, serverEndPoint);
 
         // begin receiving data from server
+
         UdpClient listener = new UdpClient(22000);
         listener.BeginReceive(new AsyncCallback(Receive), listener);
 	}
@@ -93,6 +94,11 @@ public class Game : Singleton<Game> {
 	void Update () {
         lock (_queueLock)
         {
+            if (Input.GetKey("escape"))
+            {
+                Application.Quit();
+            }
+
             while (messages.Count > 0)
             {
                 byte[] data = messages.Dequeue();
@@ -130,7 +136,7 @@ public class Game : Singleton<Game> {
                     int code = data[0];
                     switch (code)
                     {
-                        case 100:
+                        case 111:
                             int i = 1;
 
                             List<int> ids = new List<int>();
@@ -154,7 +160,7 @@ public class Game : Singleton<Game> {
                                 i += 4;
                                 float y = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                 i += 4;
-                                
+
                                 /*
                                 float vx = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                 i += 4;
@@ -165,10 +171,14 @@ public class Game : Singleton<Game> {
                                 float r = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                 i += 4;
 
+                                int n = BitConverter.ToInt32(data.SubArray(i, 4), 0);
+                                i += 4;
+
                                 if (!players.ContainsKey(id))
                                 {
                                     GameObject player = (GameObject)Instantiate(playerPrefab, new Vector3(x, y, -10), Quaternion.identity);
                                     player.GetComponent<Player>().id = id;
+                                    player.GetComponent<Player>().username = name;
                                     players.Add(id, player);
                                     colors.Add(id, Color.HSVToRGB(UnityEngine.Random.value, UnityEngine.Random.value * 0.3f + 0.7f, 1));
                                     player.GetComponent<SpriteRenderer>().color = colors[id];
@@ -183,6 +193,7 @@ public class Game : Singleton<Game> {
                                     Player player = players[id].GetComponent<Player>();
                                     player.target = new Vector3(x, y, player.transform.position.z);
                                     player.transform.rotation = Quaternion.Euler(0, 0, r);
+                                    player.bullets = n;
                                 }
 
                                 ids.Add(id);
@@ -228,7 +239,14 @@ public class Game : Singleton<Game> {
                                 if (!bullets.ContainsKey(id))
                                 {
                                     GameObject bullet = (GameObject)Instantiate(bulletPrefab, new Vector3(x, y, -20), Quaternion.identity);
-                                    bullet.GetComponent<SpriteRenderer>().color = colors[pid];
+                                    try
+                                    {
+                                        bullet.GetComponent<SpriteRenderer>().color = colors[pid];
+                                    }
+                                    catch (KeyNotFoundException e)
+                                    {
+
+                                    }
                                     bullets.Add(id, bullet);
                                     bullet.GetComponent<Bullet>().target = bullet.transform.position;
                                 }
@@ -253,6 +271,10 @@ public class Game : Singleton<Game> {
                                 Destroy(bullets[id]);
                                 bullets.Remove(id);
                             }
+                            break;
+                        case 222:
+                            sock.Close();
+                            Application.LoadLevel(0);
                             break;
                     }
                 }
@@ -291,6 +313,30 @@ public class Game : Singleton<Game> {
     {
         byte[] data = { (byte)Command.Disconnect };
         sock.SendTo(data, serverEndPoint);
+
+        sock.Close();
+    }
+
+    void OnGUI()
+    {
+        SortedList scoreboard = new SortedList();
+
+        foreach (GameObject go in players.Values)
+	    {
+            Player player = go.GetComponent<Player>();
+            scoreboard.Add(player.bullets, player.username);
+	    }
+
+        const float x = 10;
+        const float w = 128;
+        const float h = 32;
+
+        for (int i = scoreboard.Count - 1; i >= Mathf.Max(scoreboard.Count - 10, 0); i--)
+        {
+            int num = scoreboard.Count - 1 - i + 1;
+            string text = num + ". " + scoreboard.GetByIndex(i).ToString() + " : " + scoreboard.GetKey(i);
+            GUI.Label(new Rect(x, (i + 1) * (h + 8), w, h), text);
+        }
     }
 }
 

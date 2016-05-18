@@ -31,7 +31,7 @@ namespace GameServer
 
         public bool init;
 
-        public float invTime = 2.5f;
+        public float invTime = 1.5f;
 
         public int col;
         public int row;
@@ -145,6 +145,9 @@ namespace GameServer
             */
 
             temp = BitConverter.GetBytes(r);
+            data = data.Concat(temp).ToArray();
+
+            temp = BitConverter.GetBytes(bullets);
             data = data.Concat(temp).ToArray();
 
             return data;

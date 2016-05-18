@@ -5,7 +5,7 @@ public class Player : MonoBehaviour {
 
     public int id;
 
-    public string name;
+    public string username;
 
     private GameObject cam;
 
@@ -17,31 +17,66 @@ public class Player : MonoBehaviour {
 
     public GameObject label;
 
+    private float invTime = 2f;
+    
+
+    private bool init = false;
+
+    private Color color, invColor;
+
+    public int bullets = 5;
+
 	// Use this for initialization
 	void Start () {
-        
+        GameObject particle = (GameObject)Instantiate(
+            (GameObject)Resources.Load("Prefabs/Spawn", typeof(GameObject)),
+            transform.position, Quaternion.identity);
+        particle.GetComponent<ParticleSystem>().startColor = GetComponent<SpriteRenderer>().color;
 	}
 	
 	// Update is called once per frame
 	void Update ()
     {
-        Vector3 dir = (target - transform.position).normalized;
-
-        if (Vector3.Distance(transform.position, target) < maxSpeed * Time.deltaTime)
+        if (!init)
         {
-            transform.position = target;
+            color = GetComponent<SpriteRenderer>().color;
+            float h, s, v;
+            Color.RGBToHSV(color, out h, out s, out v);
+            invColor = Color.HSVToRGB(h, s * 0.4f, v);
+            init = true;
+        }
+        
+        if (invTime > 0)
+        {
+            if (((int)invTime * 10) % 2 == 1)
+            {
+                GetComponent<SpriteRenderer>().color = new Color(invColor.r, invColor.g, invColor.b, 0.75f);
+            }
+            else
+            {
+                GetComponent<SpriteRenderer>().color = new Color(color.r, color.g, color.b, 0.75f);
+            }
+            invTime -= Time.deltaTime;
         }
         else
         {
-            transform.position += dir * maxSpeed * Time.deltaTime;
+            GetComponent<SpriteRenderer>().color = new Color(color.r, color.g, color.b, 1.0f);
         }
 
+        transform.position = Vector3.Lerp(transform.position, target, Time.deltaTime * maxSpeed * 2.0f);
+        
         label.transform.position = this.transform.position - new Vector3(0, -0.35f, 1);
 
         if (id == Game.Instance.playerId)
         {
             cam = GameObject.Find("Main Camera");
-            cam.transform.position = new Vector3(transform.position.x, transform.position.y, cam.transform.position.z);
+
+            // adjust camera offset
+            Vector3 mouseInWorld = cam.GetComponent<Camera>().ScreenToWorldPoint(Input.mousePosition);
+            Vector3 cameraOffset = transform.position + (mouseInWorld - transform.position) * 0.3f;
+            cameraOffset.z = -500.0f;
+            cam.transform.position = cameraOffset;
+            //cam.transform.position = new Vector3(transform.position.x, transform.position.y, cam.transform.position.z);
 
             // mouse aim
             Vector2 positionOnScreen = cam.GetComponent<Camera>().WorldToViewportPoint(transform.position);
@@ -108,11 +143,20 @@ public class Player : MonoBehaviour {
 
     void OnDestroy()
     {
+        GameObject particle = (GameObject)Instantiate(
+            (GameObject)Resources.Load("Prefabs/Explode", typeof(GameObject)),
+            transform.position, Quaternion.identity);
+        particle.GetComponent<ParticleSystem>().startColor = GetComponent<SpriteRenderer>().color;
         Destroy(label);
     }
 
     private float AngleBetweenTwoPoints(Vector3 a, Vector3 b)
     {
         return Mathf.Atan2(a.y - b.y, a.x - b.x) * Mathf.Rad2Deg;
+    }
+
+    void OnGUI()
+    {
+        GUI.Label(new Rect(10, 200, 128, 32), "" + invTime);
     }
 }

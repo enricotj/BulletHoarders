@@ -51,6 +51,7 @@
      <Compile Include="Assets\Scripts\Game.cs" />
      <Compile Include="Assets\Scripts\Label.cs" />
      <Compile Include="Assets\Scripts\MethodExtensionForMonoBehaviourTransform.cs" />
+     <Compile Include="Assets\Scripts\Particle.cs" />
      <Compile Include="Assets\Scripts\Player.cs" />
      <Compile Include="Assets\Scripts\Singleton.cs" />
  <Reference Include="UnityEngine.UI">
