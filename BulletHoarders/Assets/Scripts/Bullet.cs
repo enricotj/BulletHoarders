@@ -28,9 +28,5 @@ public class Bullet : MonoBehaviour {
 
     void OnDestroy()
     {
-        GameObject particle = (GameObject)Instantiate(
-            (GameObject)Resources.Load("Prefabs/Pickup", typeof(GameObject)),
-            transform.position, Quaternion.identity);
-        particle.GetComponent<ParticleSystem>().startColor = GetComponent<SpriteRenderer>().color;
     }
 }

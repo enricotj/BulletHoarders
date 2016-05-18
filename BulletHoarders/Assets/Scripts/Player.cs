@@ -143,10 +143,6 @@ public class Player : MonoBehaviour {
 
     void OnDestroy()
     {
-        GameObject particle = (GameObject)Instantiate(
-            (GameObject)Resources.Load("Prefabs/Explode", typeof(GameObject)),
-            transform.position, Quaternion.identity);
-        particle.GetComponent<ParticleSystem>().startColor = GetComponent<SpriteRenderer>().color;
         Destroy(label);
     }
 
@@ -157,6 +153,5 @@ public class Player : MonoBehaviour {
 
     void OnGUI()
     {
-        GUI.Label(new Rect(10, 200, 128, 32), "" + invTime);
     }
 }
