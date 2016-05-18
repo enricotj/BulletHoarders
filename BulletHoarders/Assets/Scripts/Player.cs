@@ -84,14 +84,12 @@ public class Player : MonoBehaviour {
             float angle = AngleBetweenTwoPoints(positionOnScreen, mouseOnScreen) + 180;
             transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
 
-            bool sentRot = false;
             float rot = transform.rotation.eulerAngles.z;
-            if (Mathf.Abs(rot - prot) > 5)
+            if (rot != prot)
             {
                 Game.Instance.Send(rot);
-                prot = rot;
-                sentRot = true;
             }
+            prot = rot;
 
             // movement
             if (Input.GetKeyDown(KeyCode.A))
@@ -132,10 +130,6 @@ public class Player : MonoBehaviour {
 
             if (Input.GetMouseButtonDown(0))
             {
-                if (!sentRot)
-                {
-                    Game.Instance.Send(rot);
-                }
                 Game.Instance.Send(Command.Shoot);
             }
         }

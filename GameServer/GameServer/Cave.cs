@@ -146,9 +146,9 @@ namespace GameServer
                     {
                         data[i] = (byte)grid[c, r];
                         i++;
-                        Console.Write(((int)grid[c, r]) + "\t");
+                        //Console.Write(((int)grid[c, r]) + "\t");
                     }
-                    Console.WriteLine();
+                    //Console.WriteLine();
                 }
             }
             return data;

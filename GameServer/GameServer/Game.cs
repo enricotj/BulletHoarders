@@ -91,16 +91,16 @@ namespace GameServer
             string source = msg.source;
             byte[] data = msg.data;
 
-            if (!clients.ContainsKey(source) && data.Length >= sizeof(int))
+            if (!clients.ContainsKey(source) && data.Length >= sizeof(int) && data[0] == 254)
             {
                 // add client to list
-                byte[] portData = data.SubArray(0, sizeof(int));
-                int clientPort = BitConverter.ToInt32(data, 0);
+                byte[] portData = data.SubArray(1, sizeof(int));
+                int clientPort = BitConverter.ToInt32(portData, 0);
                 IPEndPoint cep = new IPEndPoint(IPAddress.Parse(source), clientPort);
                 Console.WriteLine(clientPort);
 
                 // get player name
-                byte[] nameData = data.SubArray(sizeof(int));
+                byte[] nameData = data.SubArray(sizeof(int) + 1);
                 string name = Encoding.ASCII.GetString(nameData);
                 Console.WriteLine(name);
 

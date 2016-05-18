@@ -78,12 +78,14 @@ public class Game : Singleton<Game> {
 
         IPAddress ip = IPAddress.Parse(HOST);
         serverEndPoint = new IPEndPoint(ip, 11200);
-        byte[] handshake = new byte[sizeof(int) + playerName.Length * 2];
+        byte[] handshake = new byte[sizeof(int) + playerName.Length * 2 + 1];
 
         byte[] portBytes = BitConverter.GetBytes(22000);
         byte[] nameBytes = Encoding.ASCII.GetBytes(playerName);
 
-        int i = 0;
+        handshake[0] = 254;
+
+        int i = 1;
         foreach (byte b in portBytes)
         {
             handshake[i] = b;
