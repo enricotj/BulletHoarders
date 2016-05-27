@@ -19,12 +19,10 @@ public class Game : Singleton<Game> {
     private Socket sock;
     private EndPoint serverEndPoint;
 
-    public string playerName = "PlayerName";
+    public string playerName = "";
 
     private Queue<byte[]> messages = new Queue<byte[]>();
     private object _queueLock = new object();
-
-    private object _scorelock = new object();
 
     private Sprite[] tileSprites;
 
@@ -40,15 +38,30 @@ public class Game : Singleton<Game> {
     private Dictionary<int, GameObject> bullets = new Dictionary<int, GameObject>();
     private Dictionary<int, Color> colors = new Dictionary<int, Color>();
 
-    private const string HOST = "137.112.155.138";
+    private const string HOST_A = "137.112.155.138";
+    private const string HOST_B = "23.96.182.222";
     private const string LOCAL = "127.0.0.1";
 
     private UdpClient listener;
 
-    private bool connected = false;
+    public bool ready = false;
+    public bool connected = false;
+    private int levelProgress = -1;
+    private int levelPackets = 0;
+    private int levelWidth = 0;
+    private int levelHeight = 0;
+
+    public string status = "Type in a username and connect!";
 
 	// Use this for initialization
 	public void Connect (string playerName) {
+        levelWidth = 0;
+        levelHeight = 0;
+        levelProgress = -1;
+        levelPackets = 0;
+
+        ready = false;
+        connected = false;
         level = null;
 
         messages = new Queue<byte[]>();
@@ -74,9 +87,13 @@ public class Game : Singleton<Game> {
         tileSprites[7] = (Sprite)Resources.Load("Sprites/West", typeof(Sprite));
         tileSprites[8] = (Sprite)Resources.Load("Sprites/South", typeof(Sprite));
 
-        sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        if (sock == null)
+        {
+            sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Debug.Log("SOCKET INITIALIZED");
+        }
 
-        IPAddress ip = IPAddress.Parse(HOST);
+        IPAddress ip = IPAddress.Parse(HOST_A);
         serverEndPoint = new IPEndPoint(ip, 11200);
         byte[] handshake = new byte[sizeof(int) + playerName.Length * 2 + 1];
 
@@ -101,54 +118,93 @@ public class Game : Singleton<Game> {
 
         // begin receiving data from server
 
-        listener = new UdpClient(22000);
-        listener.BeginReceive(new AsyncCallback(Receive), listener);
+        if (listener == null)
+        {
+            listener = new UdpClient(22000, AddressFamily.InterNetwork);
+            listener.BeginReceive(new AsyncCallback(Receive), listener);
+            Debug.Log("LISTENING");
+        }
 
-        connected = true;
+        ready = true;
+        status = "Loading...";
 	}
 	
 	// Update is called once per frame
 	void Update () {
-        if (connected)
+        if (Input.GetKey("escape"))
+        {
+            Application.Quit();
+        }
+        if (ready)
         {
             lock (_queueLock)
             {
-                if (Input.GetKey("escape"))
-                {
-                    Application.Quit();
-                }
-
                 while (messages.Count > 0)
                 {
                     byte[] data = messages.Dequeue();
-                    if (level == null)
+                    if (levelProgress < levelPackets)
                     {
-                        playerId = data[0];
-                        int width = (int)data[1];
-                        int height = (int)data[2];
-                        Debug.Log("ID: " + playerId);
-                        Debug.Log("Level Width: " + width);
-                        Debug.Log("Level Height: " + height);
-                        level = new CellType[width, height];
-                        for (int r = 0; r < height; r++)
+                        #region Receive Level Data
+                        if (levelProgress < 0)
                         {
-                            for (int c = 0; c < width; c++)
+                            playerId = data[0];
+                            levelWidth = (int)data[1];
+                            levelHeight = (int)data[2];
+                            Debug.Log("ID: " + playerId);
+                            Debug.Log("Level Width: " + levelWidth);
+                            Debug.Log("Level Height: " + levelHeight);
+                            level = new CellType[levelWidth, levelHeight];
+                            if (playerId == 0 && levelWidth == 0 && levelHeight == 0)
                             {
-                                int i = r * width + c + 3;
-                                level[c, r] = (CellType)data[i];
-
-                                if (level[c, r] != CellType.Empty)
-                                {
-                                    GameObject go = (GameObject)Instantiate(tilePrefab, new Vector3(c, r, 10), Quaternion.identity);
-                                    go.GetComponent<SpriteRenderer>().sprite = tileSprites[((int)level[c, r]) - 1];
-                                }
+                                // put on waitlist
+                                status = "SERVER IS FULL: PLEASE TRY AGAIN LATER";
+                            }
+                            else
+                            {
+                                levelPackets = levelHeight;
+                                levelProgress++;
+                                byte[] ack = { (byte)levelProgress };
+                                sock.SendTo(ack, serverEndPoint);
                             }
                         }
+                        else if (data.Length == levelWidth)
+                        {
+                            for (int i = 0; i < levelWidth; i++)
+                            {
+                                level[i, levelProgress] = (CellType)data[i];
+                            }
+                            levelProgress++;
 
-                        Debug.Log("LEVEL DATA RECEIVED");
+                            Debug.Log("LEVEL DATA RECEIVED: " + levelProgress + "/" + levelPackets);
 
-                        byte[] ready = { 255 };
-                        sock.SendTo(ready, serverEndPoint);
+                            if (levelProgress >= levelPackets)
+                            {
+                                for (int r = 0; r < levelHeight; r++)
+                                {
+                                    for (int c = 0; c < levelWidth; c++)
+                                    {
+                                        if (level[c, r] != CellType.Empty)
+                                        {
+                                            GameObject go = (GameObject)Instantiate(tilePrefab, new Vector3(c, r, 10), Quaternion.identity);
+                                            go.GetComponent<SpriteRenderer>().sprite = tileSprites[((int)level[c, r]) - 1];
+                                        }
+                                    }
+                                }
+
+                                byte[] ack = { 255 };
+                                sock.SendTo(ack, serverEndPoint);
+
+                                connected = true;
+
+                                Debug.Log("LEVEL SUCCESSFULLY LOADED");
+                            }
+                            else
+                            {
+                                byte[] ack = { (byte)levelProgress };
+                                sock.SendTo(ack, serverEndPoint);
+                            }
+                        }
+                        #endregion
                     }
                     else
                     {
@@ -156,14 +212,13 @@ public class Game : Singleton<Game> {
                         switch (code)
                         {
                             case 111:
+                                //Debug.Log("SCENE DATA RECEIVED");
                                 int i = 1;
-
                                 List<int> ids = new List<int>();
                                 while (true)
                                 {
                                     // check for delim
-                                    float delimCheck = BitConverter.ToSingle(data.SubArray(i, 4), 0);
-                                    if (delimCheck == float.MaxValue)
+                                    if (BitConverter.ToSingle(data.SubArray(i, 4), 0) == float.MaxValue)
                                     {
                                         i += 4;
                                         break;
@@ -192,13 +247,16 @@ public class Game : Singleton<Game> {
                                         player.GetComponent<Player>().id = id;
                                         player.GetComponent<Player>().username = name;
                                         players.Add(id, player);
-                                        colors.Add(id, Color.HSVToRGB(UnityEngine.Random.value, UnityEngine.Random.value * 0.3f + 0.7f, 1));
+                                        colors.Add(id, Color.HSVToRGB(UnityEngine.Random.value, 1, UnityEngine.Random.value * 0.3f + 0.7f));
                                         player.GetComponent<SpriteRenderer>().color = colors[id];
                                         player.GetComponent<Player>().target = player.transform.position;
 
                                         GameObject label = (GameObject)GameObject.Instantiate(labelPrefab);
                                         player.GetComponent<Player>().label = label;
                                         label.GetComponent<TextMesh>().text = name;
+                                        label.GetComponent<TextMesh>().color = colors[id];
+
+                                        Debug.Log("PLAYER NEW " + name);
                                     }
                                     else
                                     {
@@ -229,16 +287,24 @@ public class Game : Singleton<Game> {
                                     particle.GetComponent<ParticleSystem>().startColor = players[id].GetComponent<SpriteRenderer>().color;
                                     Destroy(players[id]);
                                     players.Remove(id);
+                                    Debug.Log("PLAYER DESTROY " + player.name);
                                 }
 
                                 ids.Clear();
                                 destroy.Clear();
 
-                                while (i < data.Length)
+                                // NEW BULLETS
+                                while (true)
                                 {
+                                    // check for delim
+                                    if (i + 4 >= data.Length || BitConverter.ToSingle(data.SubArray(i, 4), 0) == float.MaxValue)
+                                    {
+                                        i += 4;
+                                        break;
+                                    }
+
                                     int id = BitConverter.ToInt32(data.SubArray(i, 4), 0);
                                     i += 4;
-
                                     int pid = data[i];
                                     i += 1;
 
@@ -246,39 +312,52 @@ public class Game : Singleton<Game> {
                                     i += 4;
                                     float y = BitConverter.ToSingle(data.SubArray(i, 4), 0);
                                     i += 4;
-
-                                    if (!bullets.ContainsKey(id))
+                                    float vx = BitConverter.ToSingle(data.SubArray(i, 4), 0);
+                                    i += 4;
+                                    float vy = BitConverter.ToSingle(data.SubArray(i, 4), 0);
+                                    i += 4;
+                                    GameObject bullet = (GameObject)Instantiate(bulletPrefab, new Vector3(x, y, -20), Quaternion.identity);
+                                    try
                                     {
-                                        GameObject bullet = (GameObject)Instantiate(bulletPrefab, new Vector3(x, y, -20), Quaternion.identity);
-                                        try
-                                        {
-                                            bullet.GetComponent<SpriteRenderer>().color = colors[pid];
-                                        }
-                                        catch (KeyNotFoundException e)
-                                        {
-
-                                        }
-                                        bullets.Add(id, bullet);
-                                        bullet.GetComponent<Bullet>().target = bullet.transform.position;
+                                        bullet.GetComponent<SpriteRenderer>().color = colors[pid];
                                     }
-                                    else
+                                    catch (KeyNotFoundException e)
                                     {
-                                        Bullet bullet = bullets[id].GetComponent<Bullet>();
-                                        bullet.target = new Vector3(x, y, bullet.transform.position.z);
+                                        bullet.GetComponent<SpriteRenderer>().color = Color.HSVToRGB(UnityEngine.Random.value, 1, UnityEngine.Random.value * 0.3f + 0.7f);
                                     }
-
-                                    ids.Add(id);
+                                    bullets.Add(id, bullet);
+                                    bullet.GetComponent<Bullet>().velocity = new Vector3(vx, vy, 0);
+                                    Debug.Log("BULLET NEW " + id);
                                 }
 
-                                foreach (int id in bullets.Keys)
+                                // STOP BULLETS
+                                while (true)
                                 {
-                                    if (!ids.Contains(id))
+                                    // check for delim
+                                    if (i + 4 >= data.Length || BitConverter.ToSingle(data.SubArray(i, 4), 0) == float.MaxValue)
                                     {
-                                        destroy.Add(id);
+                                        i += 4;
+                                        break;
                                     }
+
+                                    int id = BitConverter.ToInt32(data.SubArray(i, 4), 0);
+                                    i += 4;
+                                    float x = BitConverter.ToSingle(data.SubArray(i, 4), 0);
+                                    i += 4;
+                                    float y = BitConverter.ToSingle(data.SubArray(i, 4), 0);
+                                    i += 4;
+
+                                    GameObject bullet = bullets[id];
+                                    bullet.GetComponent<Bullet>().velocity = new Vector3(0, 0, 0);
+                                    bullet.transform.position = new Vector3(x, y, bullet.transform.position.z);
+                                    Debug.Log("BULLET STOP " + id);
                                 }
-                                foreach (int id in destroy)
+
+                                // DESTROY BULLETS
+                                while (i < data.Length)
                                 {
+                                    int id = BitConverter.ToInt32(data.SubArray(i, 4), 0);
+                                    i += 4;
                                     Bullet bullet = bullets[id].GetComponent<Bullet>();
                                     GameObject particle = (GameObject)Instantiate(
                                         (GameObject)Resources.Load("Prefabs/Pickup", typeof(GameObject)),
@@ -286,13 +365,26 @@ public class Game : Singleton<Game> {
                                     particle.GetComponent<ParticleSystem>().startColor = bullets[id].GetComponent<SpriteRenderer>().color;
                                     Destroy(bullets[id]);
                                     bullets.Remove(id);
+                                    Debug.Log("BULLET DESTROY " + id);
                                 }
                                 break;
                             case 222:
-                                connected = false;
-                                listener.Close();
-                                sock.Close();
-                                Application.LoadLevel(0);
+                                // you have died
+                                status = "You exploded into tiny bits.";
+                                Restart();
+                                break;
+
+                            case 55:
+                                // someone has won
+                                string winner = Encoding.ASCII.GetString(data.SubArray(1, 32));
+                                status = winner + " has won.";
+                                Restart();
+                                break;
+
+                            case 66:
+                                // you have won
+                                status = "YOU WON!";
+                                Restart();
                                 break;
                         }
                     }
@@ -301,31 +393,54 @@ public class Game : Singleton<Game> {
         }
 	}
 
+    private void Restart()
+    {
+        connected = false;
+        listener.Close();
+        sock.Close();
+        listener = null;
+        sock = null;
+        Application.LoadLevel(0);
+    }
+
     private void Receive(IAsyncResult result)
     {
         lock (_queueLock)
         {
+            Debug.Log("DATA RECEIVED...");
             UdpClient client = result.AsyncState as UdpClient;
-            IPEndPoint source = new IPEndPoint(0, 0);
-            byte[] data = client.EndReceive(result, ref source);
+            IPEndPoint source = new IPEndPoint(IPAddress.Any, 22000);
+            byte[] data = listener.EndReceive(result, ref source);
             messages.Enqueue(data);
+            Debug.Log(source.Address + ":" + source.Port);
+            Debug.Log("packet size: " + data.Length);
+            foreach (byte b in data)
+            {
+                Debug.Log(b);
+            }
 
-            client.BeginReceive(new AsyncCallback(Receive), client);
+            listener.BeginReceive(new AsyncCallback(Receive), listener);
         }
     }
 
     public void Send(float rot)
     {
-        byte[] data = BitConverter.GetBytes(rot);
-        byte[] cmd = { (byte)50 };
-        data = cmd.Concat(data).ToArray();
-        sock.SendTo(data, serverEndPoint);
+        if (sock != null)
+        {
+            byte[] data = BitConverter.GetBytes(rot);
+            byte[] cmd = { (byte)50 };
+            data = cmd.Concat(data).ToArray();
+            sock.SendTo(data, serverEndPoint);
+        }
     }
 
     public void Send(Command cmd)
     {
-        byte[] data = { (byte)cmd };
-        sock.SendTo(data, serverEndPoint);
+        if (sock != null)
+        {
+            byte[] data = { (byte)cmd };
+            sock.SendTo(data, serverEndPoint);
+        }
     }
 
     void OnApplicationQuit()
@@ -333,7 +448,6 @@ public class Game : Singleton<Game> {
         byte[] data = { (byte)Command.Disconnect };
         sock.SendTo(data, serverEndPoint);
         sock.Close();
-
         listener.Close();
     }
 
@@ -359,7 +473,7 @@ public class Game : Singleton<Game> {
             });
 
             const float x = 10;
-            const float w = 128;
+            const float w = 256;
             const float h = 20;
             int i = 0;
             foreach (var item in scoreboard)

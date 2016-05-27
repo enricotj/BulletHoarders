@@ -26,6 +26,8 @@ namespace GameServer
         private Dictionary<string, Player> clients;
         private List<Bullet> bullets;
 
+        private Player winner = null;
+
         private Socket sock;
 
         private const int MAX_PLAYERS = 50;
@@ -37,38 +39,22 @@ namespace GameServer
 
         public static float ANGLE = (float)Math.Sqrt(2)/2;
 
-        private const float PLAYER_SPEED = 10.0f;
+        private const float PLAYER_SPEED = 10f;
         private const float BULLET_SPEED = 20.0f;
         public static float BULLET_SIZE = 0.125f;
 
-        private List<Bullet> newBullets;
+        private List<Bullet> newBullets, stopBullets, destroyBullets;
 
         private bool[] playerIds = new bool[255];
+        UdpClient listener;
 
         public Game()
         {
-            messages = new Queue<Message>();
-            newBullets = new List<Bullet>();
-            clients = new Dictionary<string, Player>();
-            bullets = new List<Bullet>();
-
+            Init();
             sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-            // Generate Level
-            level = new Cave();
-            level.GetBytes();
-
-            cells = new Cell[Cave.caveWidth, Cave.caveHeight];
-            for (int c = 0; c < Cave.caveWidth; c++)
-            {
-                for (int r = 0; r < Cave.caveHeight; r++)
-                {
-                    cells[c, r] = new Cell();
-                }
-            }
-
             // open up a port for listening
-            UdpClient listener = new UdpClient(11200);
+            listener = new UdpClient(11200, AddressFamily.InterNetwork);
             listener.BeginReceive(new AsyncCallback(Receive), listener);
 
             Console.WriteLine("INITIALIZATION COMPLETE");
@@ -78,14 +64,16 @@ namespace GameServer
         {
             lock (_queueLock)
             {
-                UdpClient client = result.AsyncState as UdpClient;
-                IPEndPoint source = new IPEndPoint(0, 0);
-                byte[] data = client.EndReceive(result, ref source);
+                IPEndPoint source = new IPEndPoint(IPAddress.Any, 12000);
+                byte[] data = listener.EndReceive(result, ref source);
 
-                messages.Enqueue(new Message(source.Address.ToString(), data));
+                Message msg = new Message(source.Address.ToString(), data);
+                msg.endPoint = source;
+
+                messages.Enqueue(msg);
                 //Console.WriteLine("DATA RECEIVED");
 
-                client.BeginReceive(new AsyncCallback(Receive), client);
+                listener.BeginReceive(new AsyncCallback(Receive), listener);
             }
         }
 
@@ -96,41 +84,61 @@ namespace GameServer
 
             if (!clients.ContainsKey(source) && data.Length >= sizeof(int) && data[0] == 254)
             {
-                // add client to list
-                byte[] portData = data.SubArray(1, sizeof(int));
-                int clientPort = BitConverter.ToInt32(portData, 0);
-                IPEndPoint cep = new IPEndPoint(IPAddress.Parse(source), clientPort);
-                Console.WriteLine(clientPort);
-
-                // get player name
-                byte[] nameData = data.SubArray(sizeof(int) + 1);
-                string name = Encoding.ASCII.GetString(nameData);
-                Console.WriteLine(name);
-
-                Player player = new Player(name, cep, (byte)nextPlayerId);
-                player.source = source;
-                clients.Add(source, player);
-
-                // send initial level data
-                byte[] initData = { (byte)nextPlayerId };
-                initData = initData.Concat(level.GetBytes()).ToArray();
-
-                // SEND
-                sock.SendTo(initData, cep);
-
-                playerIds[nextPlayerId] = true;
-                for (int i = 0; i < playerIds.Length; i++)
+                if (clients.Keys.Count >= 40)
                 {
-                    if (!playerIds[i])
+                    byte[] portData = data.SubArray(1, sizeof(int));
+                    int clientPort = BitConverter.ToInt32(portData, 0);
+                    IPEndPoint cep = new IPEndPoint(IPAddress.Parse(source), clientPort);
+
+                    byte[] full = { 0, 0, 0 };
+
+                    sock.SendTo(full, cep);
+                }
+                else
+                {
+                    // add client to list
+                    byte[] portData = data.SubArray(1, sizeof(int));
+                    int clientPort = BitConverter.ToInt32(portData, 0);
+                    IPEndPoint cep = new IPEndPoint(IPAddress.Parse(source), clientPort);
+                    Console.WriteLine(clientPort);
+
+                    // get player name
+                    byte[] nameData = data.SubArray(sizeof(int) + 1);
+                    string name = Encoding.ASCII.GetString(nameData);
+                    Console.WriteLine(name);
+
+                    Player player = new Player(name, cep, (byte)nextPlayerId);
+                    player.source = source;
+                    clients.Add(source, player);
+
+                    // send initial level data
+                    byte[] initData = { (byte)nextPlayerId };
+                    initData = initData.Concat(level.GetBytes()).ToArray();
+
+                    // SEND
+                    sock.SendTo(initData.SubArray(0, 3), cep);
+
+                    playerIds[nextPlayerId] = true;
+                    for (int i = 0; i < playerIds.Length; i++)
                     {
-                        nextPlayerId = i;
+                        if (!playerIds[i])
+                        {
+                            nextPlayerId = i;
+                        }
                     }
                 }
             }
             else if (clients.ContainsKey(source))
             {
                 Player player = clients[source];
-                if (!player.init && data[0] == 255)
+
+                if (!player.init && data[0] != 255)
+                {
+                    player.levelProgress = data[0];
+                    Console.WriteLine(player.levelProgress);
+                    sock.SendTo(level.GetBytes().SubArray(player.levelProgress * 100 + 2, 100), player.EndPoint);
+                }
+                else if (!player.init && data[0] == 255)
                 {
                     player.init = true;
                     Console.WriteLine("PLAYER INITIALIZED");
@@ -144,7 +152,7 @@ namespace GameServer
                     cells[gp.columm, gp.row].AddPlayer(player);
 
                     // send scene packet to player
-                    byte[] scene = GetAllData();
+                    byte[] scene = GetInitData();
                     sock.SendTo(scene, player.EndPoint);
                 }
                 else
@@ -155,19 +163,15 @@ namespace GameServer
                         // key presses for left, right, up, down
                         case 0:
                             player.left = true;
-                            player.right = false;
                             break;
                         case 10:
                             player.right = true;
-                            player.left = false;
                             break;
                         case 20:
                             player.up = true;
-                            player.down = false;
                             break;
                         case 30:
                             player.down = true;
-                            player.up = false;
                             break;
 
                         // key releases for left, right, up, down
@@ -211,6 +215,7 @@ namespace GameServer
 
         private void UpdatePlayers(float dt)
         {
+            List<Bullet> spawnedBullets = new List<Bullet>();
             foreach (Player player in clients.Values)
             {
                 if (!player.init)
@@ -255,13 +260,15 @@ namespace GameServer
                         bullet.vy = (float)Math.Sin(player.r * Math.PI / 180);
                         bullet.id = nextBulletId;
                         nextBulletId++;
-                        newBullets.Add(bullet);
-
+                        spawnedBullets.Add(bullet);
                         player.bullets--;
                     }
                     player.shoot = false;
                 }
             }
+
+            newBullets.AddRange(spawnedBullets);
+            bullets.AddRange(spawnedBullets);
         }
 
         private void UpdateBullets(float dt)
@@ -313,6 +320,11 @@ namespace GameServer
                                 bullet.vx = 0;
                                 bullet.vy = 0;
 
+                                if (!stopBullets.Contains(bullet))
+                                {
+                                    stopBullets.Add(bullet);
+                                }
+
                                 for (int i = 0; i < player.bullets; i++)
                                 {
                                     Bullet b = new Bullet(player.x, player.y, player.id);
@@ -331,6 +343,12 @@ namespace GameServer
                             if (!moving && player.CollidesWith(bullet))
                             {
                                 player.bullets++;
+
+                                if (player.bullets >= 100)
+                                {
+                                    winner = player;
+                                }
+
                                 pickedBullets.Add(bullet);
                             }
                         }
@@ -361,12 +379,13 @@ namespace GameServer
             {
                 cells[picked.col, picked.row].RemoveBullet(picked);
                 bullets.Remove(picked);
+                destroyBullets.Add(picked);
             }
 
             // spawn dropped bullets
             newBullets.AddRange(spawnedBullets);
 
-            bullets.AddRange(newBullets);
+            bullets.AddRange(spawnedBullets);
         }
 
         public void Run()
@@ -387,9 +406,8 @@ namespace GameServer
                         HandleMessage(messages.Dequeue());
                     }
                 }
-
                 // Calculate DeltaTime
-                float dt = watch.ElapsedMilliseconds/1000.0f;
+                float dt = (float) watch.Elapsed.TotalMilliseconds / 1000;
                 watch.Restart();
 
                 // Run game logic
@@ -397,27 +415,41 @@ namespace GameServer
                 UpdateBullets(dt);
 
                 // Send clients positional data for all game objects
-                // ONLY SEND POSITIONAL DATA FOR OBJECTS WITHIN CLIENT'S REGION OF INTEREST
-                // Send updates for if player scored a kill
-                // Camera-Look will be disabled to allow for this
-                // 
-                /* Send:
-                 *  - Positions of players/bullets in region of interest
-                 *  - Scoreboard data
-                 *  - State log (player X has killed player Y)
-                 */
-                long bdt = broadcastTimer.ElapsedMilliseconds;
-                if (bdt > 40)
+                if (winner == null)
                 {
-                    byte[] data = GetAllData();
+                    long bdt = broadcastTimer.ElapsedMilliseconds;
+                    if (bdt > 40)
+                    {
+                        byte[] data = GetAllData();
+                        foreach (Player p in clients.Values)
+                        {
+                            sock.SendTo(data, p.EndPoint);
+                        }
+                        broadcastTimer.Restart();
+                        newBullets.Clear();
+                        stopBullets.Clear();
+                        destroyBullets.Clear();
+                    }
+                }
+                else
+                {
+                    byte[] data = {55};
+                    data = data.Concat(winner.GetNameBytes()).ToArray();
                     foreach (Player p in clients.Values)
                     {
-                        sock.SendTo(data, p.EndPoint);
+                        if (p.EndPoint.Equals(winner.EndPoint))
+                        {
+                            byte[] win = { 66 };
+                            win = win.Concat(winner.GetNameBytes()).ToArray();
+                            sock.SendTo(win, p.EndPoint);
+                        }
+                        else
+                        {
+                            sock.SendTo(data, p.EndPoint);
+                        }
                     }
-                    broadcastTimer.Restart();
+                    Reset();
                 }
-
-                newBullets.Clear();
 
                 Thread.Sleep(1);
             }
@@ -468,6 +500,10 @@ namespace GameServer
             float y = bullet.y;
             float vx = bullet.vx;
             float vy = bullet.vy;
+            if (vx == 0 && vy == 0)
+            {
+                return;
+            }
             float r = (float)Math.Atan2(vy, vx);
             float cx, cy, ccx, ccy;
             cx = (float)Math.Cos(r - Math.PI / 4);
@@ -485,6 +521,7 @@ namespace GameServer
             {
                 bullet.vx = 0;
                 bullet.vy = 0;
+                stopBullets.Add(bullet);
             }
         }
 
@@ -523,7 +560,52 @@ namespace GameServer
             byte[] delim = BitConverter.GetBytes(float.MaxValue);
 
             byte[] playerData = { };
-            byte[] bulletData = { };
+            byte[] newBulletData = { };
+            byte[] stopBulletData = { };
+            byte[] destroyBulletData = { };
+
+            for (int r = 0; r < Cave.caveHeight; r++)
+            {
+                for (int c = 0; c < Cave.caveWidth; c++)
+                {
+                    foreach (Player player in cells[c, r].GetPlayers())
+                    {
+                        byte[] data = player.GetBytes();
+                        playerData = playerData.Concat(data).ToArray();
+                    }
+                }
+            }
+
+            foreach (Bullet b in newBullets)
+	        {
+                byte[] data = b.GetBytes();
+                newBulletData = newBulletData.Concat(data).ToArray();
+	        }
+
+            foreach (Bullet b in stopBullets)
+            {
+                byte[] data = b.GetStopBytes();
+                stopBulletData = stopBulletData.Concat(data).ToArray();
+            }
+
+            foreach (Bullet b in destroyBullets)
+            {
+                byte[] data = b.GetDestroyBytes();
+                destroyBulletData = destroyBulletData.Concat(data).ToArray();
+            }
+
+            return code.Concat(playerData).Concat(delim).Concat(newBulletData).Concat(delim).Concat(stopBulletData).Concat(delim).Concat(destroyBulletData).ToArray();
+        }
+
+        private byte[] GetInitData()
+        {
+            byte[] code = { 111 };
+            byte[] delim = BitConverter.GetBytes(float.MaxValue);
+
+            byte[] playerData = { };
+            byte[] newBulletData = { };
+            byte[] stopBulletData = { };
+            byte[] destroyBulletData = { };
 
             for (int r = 0; r < Cave.caveHeight; r++)
             {
@@ -538,12 +620,46 @@ namespace GameServer
             }
 
             foreach (Bullet b in bullets)
-	        {
+            {
                 byte[] data = b.GetBytes();
-                bulletData = bulletData.Concat(data).ToArray();
-	        }
+                newBulletData = newBulletData.Concat(data).ToArray();
+            }
 
-            return code.Concat(playerData).Concat(delim).Concat(bulletData).ToArray();
+            return code.Concat(playerData).Concat(delim).Concat(newBulletData).ToArray();
         }
+
+        private void Reset()
+        {
+            Console.WriteLine("THE SERVER HAS BEEN RESET");
+            Init();
+        }
+
+        private void Init()
+        {
+            winner = null;
+            playerIds = new bool[255];
+            messages = new Queue<Message>();
+            clients = new Dictionary<string, Player>();
+
+            bullets = new List<Bullet>();
+            newBullets = new List<Bullet>();
+            stopBullets = new List<Bullet>();
+            destroyBullets = new List<Bullet>();
+
+            // Generate Level
+            level = new Cave();
+            int dataSize = level.GetBytes().Length;
+            Console.WriteLine("Number of Level Bytes: " + dataSize);
+
+            cells = new Cell[Cave.caveWidth, Cave.caveHeight];
+            for (int c = 0; c < Cave.caveWidth; c++)
+            {
+                for (int r = 0; r < Cave.caveHeight; r++)
+                {
+                    cells[c, r] = new Cell();
+                }
+            }
+        }
+
     }
 }

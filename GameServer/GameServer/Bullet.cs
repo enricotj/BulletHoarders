@@ -42,8 +42,36 @@ namespace GameServer
             data = data.Concat(temp).ToArray();
             temp = BitConverter.GetBytes(y);
             data = data.Concat(temp).ToArray();
+
+            temp = BitConverter.GetBytes(vx);
+            data = data.Concat(temp).ToArray();
+            temp = BitConverter.GetBytes(vy);
+            data = data.Concat(temp).ToArray();
             
             return data;
         }
+
+        public byte[] GetStopBytes()
+        {
+            byte[] data = { };
+            byte[] temp = BitConverter.GetBytes(id);
+            data = data.Concat(temp).ToArray();
+            
+            temp = BitConverter.GetBytes(x);
+            data = data.Concat(temp).ToArray();
+            temp = BitConverter.GetBytes(y);
+            data = data.Concat(temp).ToArray();
+
+            return data;
+        }
+
+        public byte[] GetDestroyBytes()
+        {
+            byte[] data = { };
+            byte[] temp = BitConverter.GetBytes(id);
+            data = data.Concat(temp).ToArray();
+            return data;
+        }
+
     }
 }

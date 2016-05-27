@@ -9,9 +9,8 @@ namespace GameServer
 {
     public class Player
     {
-        // limit to 16 characters (17 including \0)
+        // limit to 16 characters
         private const int NAME_LENGTH = 32;
-
         public string name;
 
         public string source;
@@ -19,28 +18,23 @@ namespace GameServer
 
         public float x = 0;
         public float y = 0;
-
         public float vx = 0;
         public float vy = 0;
-
         public float r = 0;
 
         public int bullets = 5;
 
         public byte id;
 
-        public bool init;
+        public float invTime = 2f;
 
-        public float invTime = 1.5f;
+        public int col, row;
 
-        public int col;
-        public int row;
-
-        public bool shoot = false;
-
-        public bool left, right, up, down;
+        public bool init, shoot, left, right, up, down;
 
         public bool alive = true;
+
+        public int levelProgress = 0;
 
         public Player(string name, IPEndPoint endPoint, float x, float y, byte id)
         {
@@ -49,6 +43,9 @@ namespace GameServer
             this.x = x;
             this.y = y;
             this.id = id;
+
+            this.col = (int)x;
+            this.row = (int)y;
         }
 
         public Player(string name, IPEndPoint endPoint, byte id)
@@ -142,6 +139,22 @@ namespace GameServer
 
             temp = BitConverter.GetBytes(bullets);
             data = data.Concat(temp).ToArray();
+
+            return data;
+        }
+
+        public byte[] GetNameBytes()
+        {
+            byte[] data = { };
+            byte[] temp = Encoding.ASCII.GetBytes(name);
+            data = data.Concat(temp).ToArray();
+
+            byte[] pad = new byte[NAME_LENGTH - temp.Length];
+            for (int i = 0; i < pad.Length; i++)
+            {
+                pad[i] = 0x00;
+            }
+            data = data.Concat(pad).ToArray();
 
             return data;
         }

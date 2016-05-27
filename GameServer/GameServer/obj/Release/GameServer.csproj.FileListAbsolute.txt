@@ -1,0 +1,6 @@
+C:\Users\enricotj\Desktop\BulletHoarders\GameServer\GameServer\bin\Release\GameServer.exe.config
+C:\Users\enricotj\Desktop\BulletHoarders\GameServer\GameServer\bin\Release\GameServer.exe
+C:\Users\enricotj\Desktop\BulletHoarders\GameServer\GameServer\bin\Release\GameServer.pdb
+C:\Users\enricotj\Desktop\BulletHoarders\GameServer\GameServer\obj\Release\GameServer.csprojResolveAssemblyReference.cache
+C:\Users\enricotj\Desktop\BulletHoarders\GameServer\GameServer\obj\Release\GameServer.exe
+C:\Users\enricotj\Desktop\BulletHoarders\GameServer\GameServer\obj\Release\GameServer.pdb

@@ -42,7 +42,7 @@ public class Player : MonoBehaviour {
             color = GetComponent<SpriteRenderer>().color;
             float h, s, v;
             Color.RGBToHSV(color, out h, out s, out v);
-            invColor = Color.HSVToRGB(h, s * 0.4f, v);
+            invColor = Color.white;
             init = true;
         }
         
@@ -63,7 +63,7 @@ public class Player : MonoBehaviour {
             GetComponent<SpriteRenderer>().color = new Color(color.r, color.g, color.b, 1.0f);
         }
 
-        transform.position = Vector3.Lerp(transform.position, target, Time.deltaTime * maxSpeed * 2.0f);
+        transform.position = Vector3.Lerp(transform.position, target, Time.deltaTime * maxSpeed * 1.5f);
         
         label.transform.position = this.transform.position - new Vector3(0, -0.35f, 1);
 
@@ -104,6 +104,8 @@ public class Player : MonoBehaviour {
             if (Input.GetKeyDown(KeyCode.D))
             {
                 Game.Instance.Send(Command.RightPress);
+                //GameObject test = (GameObject) Instantiate((GameObject)Resources.Load("Prefabs/Bullet", typeof(GameObject)), transform.position, Quaternion.identity);
+                //test.GetComponent<Bullet>().velocity = new Vector3(1, 0, 0);
             }
             if (Input.GetKeyUp(KeyCode.D))
             {
